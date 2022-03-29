@@ -1,39 +1,56 @@
 <?php
 
-
 $db = new mysqli("localhost", "root", "", "med");
 
+//stary sposób - raczej nie robić
+/*
+$q = "SELECT * FROM staff";
+$result = $db->query($q);
+*/
+//pobierz wszystkich pracowników
 $q = $db->prepare("SELECT * FROM staff");
-
-
-if($q->execute()) {
-    // wykona jeśli kwerenda jest poprawnie przetworzona przez serwer
+if($q && $q->execute()) {
+    //ta część wywoła się jeśli kwerenda wykona się
+    //prawidłowo
     $result = $q->get_result();
-    while($row = $result->fetch_assoc()) {
-        $staff_id = $row['id'];
-        $firstname = $row['FirstName'];
-        $lastname = $row['Lastname'];
-        echo "Lekarz $firstname $lastname<br>";
-        $q = $db->prepare("SELECT * FROM schedule WHERE staff_id = ?");
-        $q->bind_param("i", $staff_id);
-        if($q->execute()) {
-            $schedule = $q->get_result();
-            while($visit = $schedule->fetch_assoc()) {
-                $timestamp = strtotime($visit['date']);
-                echo "<button style=\"margin:10px;\">";
-                echo date("j/m/Y H:i", $timestamp);
-                echo "</button>";
+    while($staff = $result->fetch_assoc()) {
+        //każde wywołanie to jeden wiersz gdzie w 
+        //$staff będą inne dane
+        $staffId = $staff['id'];
+        $firstName = $staff['firstName'];
+        $lastName = $staff['lastName'];
+        echo "Lekarz $firstName $lastName<br>";
+        //przygotuj nową kwerendę - pobierz wizyty dla lekarza
+        $q = $db->prepare("SELECT * FROM appointment WHERE staff_id = ?");
+        //podstaw zmienną do kwerendy
+        $q->bind_param("i", $staffId);
+        if($q && $q->execute()) {
+            //jeśli kwerenda wykona się prawidłowo
+            //pobierz dane
+            $appointments = $q->get_result();
+            while($appointment = $appointments->fetch_assoc()) {
+                //zapisz id i date z bazy do lokalnych zmiennych
+                $appointmentId = $appointment['id'];
+                $appointmentDate = $appointment['date'];
+                //zamień date z bazy na timestamp 
+                $appointmentTimestamp = strtotime($appointmentDate);
+                //wyświetl guzik
+                echo "<a href=\"appointment.php?id=$appointmentId\" style=\"margin:10px; display:block\">";
+                //wyświetl termin w formacie dzień.miesiąc godzina:minuta)
+                echo date("j.m H:i", $appointmentTimestamp);
+                //zamknij guzik
+                echo "</a>";
             }
             echo "<br>";
+        } else {
+            //jeśli nie wykona się prawidłowo
+            die("Błąd pobierania wizyt z bazy danych");
         }
-
-         
     }
 } else {
-    echo "Błąd podczas wyszukiwania w bazie danych";   
+    //ta część wykona się jeśli kwerenda nie wykona się
+    //prawidłowo - np. spowoduje błąd
+    die("Błąd pobierania lekarzy z bazy danych");
 }
-
-
-
 
 ?>
