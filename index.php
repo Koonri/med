@@ -53,4 +53,4 @@ if($q && $q->execute()) {
     die("Błąd pobierania lekarzy z bazy danych");
 }
 
-?>
+?> 
